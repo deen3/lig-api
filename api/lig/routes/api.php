@@ -20,29 +20,24 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::post('/posts/{post}/comments', 'CommentsController@store');
-Route::patch('/posts/{post}/comments/{comment}', 'CommentsController@update');
-Route::delete('/posts/{post}/comments/{comment}', 'CommentsController@destroy');
+Route::group(['middleware' => 'auth:api'], function() {
+    Route::post('/posts/{post}/comments', 'CommentsController@store');
+    Route::patch('/posts/{post}/comments/{comment}', 'CommentsController@update');
+    Route::delete('/posts/{post}/comments/{comment}', 'CommentsController@destroy');
 
-Route::post('/posts', 'PostsController@store');
-Route::patch('/posts/{post}', 'PostsController@update');
-Route::delete('/posts/{post}', 'PostsController@destroy');
+    Route::post('/posts', 'PostsController@store');
+    Route::patch('/posts/{post}', 'PostsController@update');
+    Route::delete('/posts/{post}', 'PostsController@destroy');
 
-Route::post('/logout', function(){
-
+    Route::post('logout', 'Auth\LoginController@logout');
 });
 
 Route::get('/posts/{post}/comments', 'CommentsController@show');
 Route::get('/posts', 'PostsController@index');
 Route::get('/posts/{post}', 'PostsController@show');
 
-Route::post('/register', function(){
-
-});
-
-Route::post('/login', function(){
-
-});
+Route::post('register', 'Auth\RegisterController@register');
+Route::post('login', 'Auth\LoginController@login');
 
 
 
