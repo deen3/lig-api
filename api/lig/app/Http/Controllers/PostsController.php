@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Request;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Posts;
 
@@ -33,7 +33,7 @@ class PostsController extends Controller
      */
     public function store(Request $request)
     {
-        $body_content = json_decode($request::getContent());
+        $body_content = json_decode($request->getContent());
           
         $array_data = (array)$body_content;
         $validator = Validator::make($array_data, [
@@ -47,20 +47,23 @@ class PostsController extends Controller
                 'errors' => $validator->messages()
             ], 422);
         }
-
-
+        
         $post = new Posts;
         $post->title = $body_content->title;
         $post->slug = str_slug($body_content->title, '-');;
         $post->content = $body_content->content;
         $post->image = $body_content->image;
+        $post->user_id = $request->user()->id;
         
-        if(!$post->save()){
-            return response()->json(['error' => "Error in saving"], 500);
-        } else {
-            $post = Posts::find($post->id);
+        try {
+            $post->save();
             return response()->json(['data' => $post], 200);
-        }    
+        } catch(\Illuminate\Database\QueryException $e){
+            $errorCode = $e->errorInfo[1];
+            if($errorCode == '1062'){
+                return response()->json(['errors' => $e], 200);
+            }
+        }  
     }
 
     /**
@@ -87,18 +90,15 @@ class PostsController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, $slug)
     {
-        $body_content = json_decode($request::getContent());
-
-        $post = Posts::find($id);
-        $post->title = $body_content->title;
-        $post->slug = str_slug($body_content->title, '-');
+        $post = Posts::where('slug', $slug)->firstOrFail();
+        $post->title = $request->title;
+        $post->slug = str_slug($request->title, '-');
 
         if(!$post->save()){
             return response()->json(['error' => "Error in saving"], 500);
         } else {
-            $post = Posts::find($id);
             return response()->json(['data' => $post], 200);
         }  
     }
@@ -120,7 +120,7 @@ class PostsController extends Controller
                 return response()->json(['status' => 'record deleted successfully'], 200);
             }     
         } else {
-            return response()->json(['error' => "Cannot find data to delete"], 422);
+            return response()->json(['error' => "Cannot find record to delete"], 422);
         }
 
         
